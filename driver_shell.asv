@@ -7,8 +7,8 @@ ver3d_CGHD = [ 0.577350269189626, -0.577350269189626, -0.577350269189626,  0.577
 
 
 %% spherical shell surface
-r_inner = 1.9;  % 内层半径
-r_outer = 2;  % 外层半径
+r_inner = 98;  % 内层半径
+r_outer = 100;  % 外层半径
 
 % 内层顶点
 ver3d_BCDA_inner = r_inner * [0.577350269189626,  0.577350269189626,  0.577350269189626,  0.577350269189626;
@@ -95,7 +95,7 @@ nrbplot(rdodesphere_outer(5).nurbs, [50 50]);
 % 设置显示属性
 axis equal;
 xlabel('X'); ylabel('Y'); zlabel('Z');
-title('Multi-tile Sphere Shell');
+title('Multi-tile Sphere Shell Surface');
 grid on;
 hold off;
 
@@ -103,6 +103,25 @@ hold off;
 % 绘制瓦片和控制点
 figure;
 hold on;
+
+for k = 1:6
+    ctrl_pts = double(rdodesphere_inner(k).nurbs.coefs); 
+
+    x = squeeze(ctrl_pts(1,:,:) ./ ctrl_pts(4,:,:));
+    y = squeeze(ctrl_pts(2,:,:) ./ ctrl_pts(4,:,:));
+    z = squeeze(ctrl_pts(3,:,:) ./ ctrl_pts(4,:,:));
+
+    scatter3(x(:), y(:), z(:), 100, 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceColor','r');
+
+    for i = 1:size(x,1)
+        plot3(x(i,:), y(i, :), z(i, :), 'k-', 'LineWidth', 1); 
+    end
+
+    for j = 1:size(x,2)
+        plot3(x(:, j), y(:, j), z(:, j), 'k-', 'LineWidth', 1);
+    end
+end
+
 
 for k = 1:6
     ctrl_pts = double(rdodesphere_outer(k).nurbs.coefs); 
@@ -130,4 +149,156 @@ grid on;
 hold off;
 
 %% Spericall shell block
-hcon3d_shell = cat(4, tile_inner.coefs, hcon3d_outer);
+shell_coefs = cat(4, tile_inner.coefs, tile_outer.coefs);
+
+knots_r = [0 0 1 1];
+
+tile_shell = nrbmak(shell_coefs, {[0 0 0 0 0 1 1 1 1 1] [0 0 0 0 0 1 1 1 1 1] [0 0 1 1]});
+
+figure;
+hold on;
+nrbplot(tile_shell, [50 50 50]);
+% 设置显示属性
+axis equal;
+xlabel('X'); ylabel('Y'); zlabel('Z');
+title('Multi-tile Sphere Shell Block');
+grid on;
+hold off;
+
+rdodesphereshell = struct([]);
+
+for k = 1:6
+
+    shell_coefs = cat(4, rdodesphere_inner(k).nurbs.coefs, rdodesphere_outer(k).nurbs.coefs);
+
+    tile_shell = nrbmak(shell_coefs, {[0 0 0 0 0 1 1 1 1 1] [0 0 0 0 0 1 1 1 1 1] [0 0 1 1]});
+
+    rdodesphereshell(k).nurbs = tile_shell;
+
+end
+
+figure;
+hold on;
+
+nrbplot(rdodesphereshell(1).nurbs, [50 50 50]);
+% nrbplot(rdodesphereshell(2).nurbs, [50 50 50]);
+% nrbplot(rdodesphereshell(3).nurbs, [50 50 50]);
+% nrbplot(rdodesphereshell(4).nurbs, [50 50 50]);
+% nrbplot(rdodesphereshell(5).nurbs, [50 50 50]);
+% nrbplot(rdodesphereshell(6).nurbs, [50 50 50]);
+
+
+% 设置显示属性
+axis equal;
+xlabel('X'); ylabel('Y'); zlabel('Z');
+title('Multi-tile Sphere Shell Block');
+grid on;
+hold off;
+
+figure;
+hold on;
+
+for k = 1:6
+    ctrl_pts = double(rdodesphereshell(k).nurbs.coefs); 
+
+    x = squeeze(ctrl_pts(1,:,:) ./ ctrl_pts(4,:,:));
+    y = squeeze(ctrl_pts(2,:,:) ./ ctrl_pts(4,:,:));
+    z = squeeze(ctrl_pts(3,:,:) ./ ctrl_pts(4,:,:));
+
+    scatter3(x(:), y(:), z(:), 100, 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceColor','r');
+
+    for i = 1:size(x,1)
+        plot3(x(i,:), y(i, :), z(i, :), 'k-', 'LineWidth', 1); 
+    end
+
+    for j = 1:size(x,2)
+        plot3(x(:, j), y(:, j), z(:, j), 'k-', 'LineWidth', 1);
+    end
+end
+
+
+% 设置显示属性
+axis equal;
+xlabel('X'); ylabel('Y'); zlabel('Z');
+title('NURBS Tiles with Control Points');
+grid on;
+hold off;
+
+% 定义 NURBS 数据
+data.TYPE = 'NURBS';
+data.GLOBAL_S = rdodesphereshell(1).nurbs.knots{1,1};
+data.GLOBAL_T = rdodesphereshell(1).nurbs.knots{1,2};
+data.GLOBAL_U = rdodesphereshell(1).nurbs.knots{1,3};
+data.DEGREE_S = rdodesphereshell(1).nurbs.order(1) - 1;
+data.DEGREE_T = rdodesphereshell(1).nurbs.order(2) - 1;
+data.DEGREE_U = rdodesphereshell(1).nurbs.order(3) - 1;
+data.NUM_CP = 8;
+
+ctrl_pts = double(rdodesphereshell(1).nurbs.coefs); 
+x = squeeze(ctrl_pts(1,:,:,:) ./ ctrl_pts(4,:,:,:));
+y = squeeze(ctrl_pts(2,:,:,:) ./ ctrl_pts(4,:,:,:));
+z = squeeze(ctrl_pts(3,:,:,:) ./ ctrl_pts(4,:,:,:));
+
+
+% 底层节点先排
+size_ctrpts = size(x);
+
+data.ctrlPts = zeros(size_ctrpts(1) * size_ctrpts(2) * size_ctrpts)
+
+counter = 1;
+for j=1:size_ctrpts(1)
+    for i=1:size_ctrpts(2)
+        data.ctrlPts(:, counter) = [x(i,j,2), y(i,j,2), z(i,j,2)];
+        counter = counter + 1;
+    end
+end
+
+
+
+
+data.ctrlPts = [
+    0.0, 0.0, 0.0, 1.0;
+    0.1, 0.0, 0.0, 1.0;
+    0.0, 0.1, 0.0, 1.0;
+    0.1, 0.1, 0.0, 1.0;
+    0.0, 0.0, 0.1, 1.0;
+    0.1, 0.0, 0.1, 1.0;
+    0.0, 0.1, 0.1, 1.0;
+    0.1, 0.1, 0.1, 1.0
+];
+
+filename = "patch" + str(0) + ".yaml";
+
+% YAML 文件写入函数
+writeYAML(filename, data);
+
+% 定义写入函数
+function writeYAML(filename, data)
+    fid = fopen(filename, 'w');
+    if fid == -1
+        error('无法打开文件 %s 进行写入', filename);
+    end
+
+    % 写入 YAML 数据
+    fprintf(fid, 'TYPE: %s\n', data.TYPE);
+    fprintf(fid, 'GLOBAL_S: [%f, %f, %f, %f ]\n', data.GLOBAL_S);
+    fprintf(fid, 'GLOBAL_T: [%f, %f, %f, %f ]\n', data.GLOBAL_T);
+    fprintf(fid, 'GLOBAL_U: [%f, %f, %f, %f ]\n', data.GLOBAL_U);
+    fprintf(fid, 'DEGREE_S: %d\n', data.DEGREE_S);
+    fprintf(fid, 'DEGREE_T: %d\n', data.DEGREE_T);
+    fprintf(fid, 'DEGREE_U: %d\n', data.DEGREE_U);
+    fprintf(fid, 'NUM_CP: %d\n\n', data.NUM_CP);
+
+    fprintf(fid, 'ctrlPts: [\n');
+    for i = 1:size(data.ctrlPts, 1)
+        fprintf(fid, '%.6f, %.6f, %.6f, %.6f', data.ctrlPts(i, :));
+        if i < size(data.ctrlPts, 1)
+            fprintf(fid, ',\n');
+        else
+            fprintf(fid, '\n');
+        end
+    end
+    fprintf(fid, ']\n');
+
+    fclose(fid);
+end
