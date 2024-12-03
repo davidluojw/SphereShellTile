@@ -224,44 +224,48 @@ title('NURBS Tiles with Control Points');
 grid on;
 hold off;
 
+%% write geometry yaml file
+
 % 定义 NURBS 数据
 data.TYPE = 'NURBS';
-data.GLOBAL_S = rdodesphereshell(1).nurbs.knots{1,1};
-data.GLOBAL_T = rdodesphereshell(1).nurbs.knots{1,2};
-data.GLOBAL_U = rdodesphereshell(1).nurbs.knots{1,3};
-data.DEGREE_S = rdodesphereshell(1).nurbs.order(1) - 1;
-data.DEGREE_T = rdodesphereshell(1).nurbs.order(2) - 1;
-data.DEGREE_U = rdodesphereshell(1).nurbs.order(3) - 1;
-
-ctrlpts_wegts = double(rdodesphereshell(1).nurbs.coefs); 
-size_ctrpts_wegts = size(ctrlpts_wegts);   % 4 5 5 2
-
-data.NUM_CP = size_ctrpts_wegts(2)*size_ctrpts_wegts(3)*size_ctrpts_wegts(4);
-
-x = squeeze(ctrlpts_wegts(1,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
-y = squeeze(ctrlpts_wegts(2,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
-z = squeeze(ctrlpts_wegts(3,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
-w = squeeze(ctrlpts_wegts(4,:,:,:));
-for r=1:size_ctrpts_wegts(4)
-    w(:,:,r) = w(:,:,r) / max(max(w(:,:,r)));
-end
-
-% 底层节点先排
-% (5*5*2, 4)
-data.ctrlPts = zeros(size_ctrpts_wegts(2) * size_ctrpts_wegts(3) * size_ctrpts_wegts(4), size_ctrpts_wegts(1));
-
-counter = 1;
-for k =1:size_ctrpts_wegts(4)
-    for j=1:size_ctrpts_wegts(2)
-        for i=1:size_ctrpts_wegts(3)
-            data.ctrlPts(counter, :) = [x(i,j,k), y(i,j,k), z(i,j,k), w(i,j,k)];
-            counter = counter + 1;
+for a = 1:6
+    data.GLOBAL_S = rdodesphereshell(a).nurbs.knots{1,1};
+    data.GLOBAL_T = rdodesphereshell(a).nurbs.knots{1,2};
+    data.GLOBAL_U = rdodesphereshell(a).nurbs.knots{1,3};
+    data.DEGREE_S = rdodesphereshell(a).nurbs.order(1) - 1;
+    data.DEGREE_T = rdodesphereshell(a).nurbs.order(2) - 1;
+    data.DEGREE_U = rdodesphereshell(a).nurbs.order(3) - 1;
+    
+    ctrlpts_wegts = double(rdodesphereshell(a).nurbs.coefs); 
+    size_ctrpts_wegts = size(ctrlpts_wegts);   % 4 5 5 2
+    
+    data.NUM_CP = size_ctrpts_wegts(2)*size_ctrpts_wegts(3)*size_ctrpts_wegts(4);
+    
+    x = squeeze(ctrlpts_wegts(1,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
+    y = squeeze(ctrlpts_wegts(2,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
+    z = squeeze(ctrlpts_wegts(3,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
+    w = squeeze(ctrlpts_wegts(4,:,:,:));
+    for r=1:size_ctrpts_wegts(4)
+        w(:,:,r) = w(:,:,r) / max(max(w(:,:,r)));
+    end
+    
+    % 底层节点先排，再排上层的节点
+    % (5*5*2, 4)
+    data.ctrlPts = zeros(size_ctrpts_wegts(2) * size_ctrpts_wegts(3) * size_ctrpts_wegts(4), size_ctrpts_wegts(1));
+    
+    counter = 1;
+    for k =1:size_ctrpts_wegts(4)
+        for j=1:size_ctrpts_wegts(2)
+            for i=1:size_ctrpts_wegts(3)
+                data.ctrlPts(counter, :) = [x(i,j,k), y(i,j,k), z(i,j,k), w(i,j,k)];
+                counter = counter + 1;
+            end
         end
     end
+    
+    filename = "patch" + num2str(a-1) + ".yml";
+    
+    % YAML 文件写入函数
+    writeYAML(filename, data);
 end
-
-filename = "patch" + num2str(0) + ".yml";
-
-% YAML 文件写入函数
-writeYAML(filename, data);
 
