@@ -1,0 +1,216 @@
+clear all; clc;
+
+
+
+%% spherical shell surface
+r_inner = 98;  % 内层半径
+r_outer = 100;  % 外层半径
+
+%multipatch structure
+rdodesphere_inner = struct([]);
+rdodesphere_outer = struct([]);
+
+% 内层控制点
+% [tile_inner, sgp_inner] = MakeTile(ver3d_CGHD_inner, r_inner);
+% [rdodesphere_inner] = Multi_SphereFromCube(tile_inner);
+tile_inner = HemiSphereLoad(r_inner);
+rdodesphere_inner(1).nurbs = tile_inner;
+rot1 = vecroty(-pi);
+rdodesphere_inner(2).nurbs = nrbtform(rdodesphere_inner(1).nurbs,rot1);
+
+% 外层控制点
+% [tile_outer, sgp_outer] = MakeTile(ver3d_CGHD_outer, r_outer);
+% [rdodesphere_outer] = Multi_SphereFromCube(tile_outer);
+tile_outer = HemiSphereLoad(r_outer);
+rdodesphere_outer(1).nurbs = tile_inner;
+rot1 = vecroty(-pi);
+rdodesphere_outer(2).nurbs = nrbtform(rdodesphere_outer(1).nurbs,rot1);
+
+% 绘制瓦片
+figure;
+hold on;
+
+
+% 绘制每个瓦片
+nrbplot(rdodesphere_inner(1).nurbs, [50 50]);  % 细化程度 50x50
+nrbplot(rdodesphere_inner(2).nurbs, [50 50]);
+
+nrbplot(rdodesphere_outer(1).nurbs, [50 50]);  % 细化程度 50x50
+nrbplot(rdodesphere_outer(2).nurbs, [50 50]);
+
+% 设置显示属性
+axis equal;
+xlabel('X'); ylabel('Y'); zlabel('Z');
+title('Multi-tile Sphere Shell Surface');
+grid on;
+hold off;
+
+
+% 绘制瓦片和控制点
+figure;
+hold on;
+
+for k = 1:2
+    ctrl_pts = double(rdodesphere_inner(k).nurbs.coefs); 
+
+    x = squeeze(ctrl_pts(1,:,:) ./ ctrl_pts(4,:,:));
+    y = squeeze(ctrl_pts(2,:,:) ./ ctrl_pts(4,:,:));
+    z = squeeze(ctrl_pts(3,:,:) ./ ctrl_pts(4,:,:));
+
+    scatter3(x(:), y(:), z(:), 100, 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceColor','r');
+
+    for i = 1:size(x,1)
+        plot3(x(i,:), y(i, :), z(i, :), 'k-', 'LineWidth', 1); 
+    end
+
+    for j = 1:size(x,2)
+        plot3(x(:, j), y(:, j), z(:, j), 'k-', 'LineWidth', 1);
+    end
+end
+
+
+for k = 1:2
+    ctrl_pts = double(rdodesphere_outer(k).nurbs.coefs); 
+
+    x = squeeze(ctrl_pts(1,:,:) ./ ctrl_pts(4,:,:));
+    y = squeeze(ctrl_pts(2,:,:) ./ ctrl_pts(4,:,:));
+    z = squeeze(ctrl_pts(3,:,:) ./ ctrl_pts(4,:,:));
+
+    scatter3(x(:), y(:), z(:), 100, 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceColor','r');
+
+    for i = 1:size(x,1)
+        plot3(x(i,:), y(i, :), z(i, :), 'k-', 'LineWidth', 1); 
+    end
+
+    for j = 1:size(x,2)
+        plot3(x(:, j), y(:, j), z(:, j), 'k-', 'LineWidth', 1);
+    end
+end
+
+% 设置显示属性
+axis equal;
+xlabel('X'); ylabel('Y'); zlabel('Z');
+title('NURBS Tiles with Control Points');
+grid on;
+hold off;
+
+%% Spericall shell block
+shell_coefs = cat(4, tile_inner.coefs, tile_outer.coefs);
+
+knots_r = [0 0 1 1];
+
+tile_shell = nrbmak(shell_coefs, {[0 0 0 0 0 1 1 1 1 1] [0 0 0 0 0 1 1 1 1 1] [0 0 1 1]});
+
+figure;
+hold on;
+nrbplot(tile_shell, [50 50 50]);
+% 设置显示属性
+axis equal;
+xlabel('X'); ylabel('Y'); zlabel('Z');
+title('Multi-tile Sphere Shell Block');
+grid on;
+hold off;
+
+rdodesphereshell = struct([]);
+
+for k = 1:2
+
+    shell_coefs = cat(4, rdodesphere_inner(k).nurbs.coefs, rdodesphere_outer(k).nurbs.coefs);
+
+    tile_shell = nrbmak(shell_coefs, {[0 0 0 0 0 1 1 1 1 1] [0 0 0 0 0 1 1 1 1 1] [0 0 1 1]});
+
+    rdodesphereshell(k).nurbs = tile_shell;
+
+end
+
+figure;
+hold on;
+
+nrbplot(rdodesphereshell(1).nurbs, [50 50 50]);
+nrbplot(rdodesphereshell(2).nurbs, [50 50 50]);
+
+
+% 设置显示属性
+axis equal;
+xlabel('X'); ylabel('Y'); zlabel('Z');
+title('Multi-tile Sphere Shell Block');
+grid on;
+hold off;
+
+figure;
+hold on;
+
+for k = 1:2
+    ctrl_pts = double(rdodesphereshell(k).nurbs.coefs); 
+
+    x = squeeze(ctrl_pts(1,:,:) ./ ctrl_pts(4,:,:));
+    y = squeeze(ctrl_pts(2,:,:) ./ ctrl_pts(4,:,:));
+    z = squeeze(ctrl_pts(3,:,:) ./ ctrl_pts(4,:,:));
+
+    scatter3(x(:), y(:), z(:), 100, 'filled', 'MarkerEdgeColor', 'k', 'MarkerFaceColor','r');
+
+    for i = 1:size(x,1)
+        plot3(x(i,:), y(i, :), z(i, :), 'k-', 'LineWidth', 1); 
+    end
+
+    for j = 1:size(x,2)
+        plot3(x(:, j), y(:, j), z(:, j), 'k-', 'LineWidth', 1);
+    end
+end
+
+
+% 设置显示属性
+axis equal;
+xlabel('X'); ylabel('Y'); zlabel('Z');
+title('NURBS Tiles with Control Points');
+grid on;
+hold off;
+
+%% write geometry yaml file
+
+% 定义 NURBS 数据
+data.TYPE = 'NURBS';
+for a = 1:2
+    data.GLOBAL_S = rdodesphereshell(a).nurbs.knots{1,1};
+    data.GLOBAL_T = rdodesphereshell(a).nurbs.knots{1,2};
+    data.GLOBAL_U = rdodesphereshell(a).nurbs.knots{1,3};
+    data.DEGREE_S = rdodesphereshell(a).nurbs.order(1) - 1;
+    data.DEGREE_T = rdodesphereshell(a).nurbs.order(2) - 1;
+    data.DEGREE_U = rdodesphereshell(a).nurbs.order(3) - 1;
+    
+    ctrlpts_wegts = double(rdodesphereshell(a).nurbs.coefs); 
+    size_ctrpts_wegts = size(ctrlpts_wegts);   % 4 5 5 2
+    
+    data.NUM_CP = size_ctrpts_wegts(2)*size_ctrpts_wegts(3)*size_ctrpts_wegts(4);
+    
+    x = squeeze(ctrlpts_wegts(1,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
+    y = squeeze(ctrlpts_wegts(2,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
+    z = squeeze(ctrlpts_wegts(3,:,:,:) ./ ctrlpts_wegts(4,:,:,:));
+    w = squeeze(ctrlpts_wegts(4,:,:,:));
+    for r=1:size_ctrpts_wegts(4)
+        w(:,:,r) = w(:,:,r) / max(max(w(:,:,r)));
+    end
+    
+    % 底层节点先排，再排上层的节点
+    % (5*5*2, 4)
+    data.ctrlPts = zeros(size_ctrpts_wegts(2) * size_ctrpts_wegts(3) * size_ctrpts_wegts(4), size_ctrpts_wegts(1));
+    
+    counter = 1;
+    for k =1:size_ctrpts_wegts(4)           % 最后沿着u排列
+        for j=1:size_ctrpts_wegts(3)        % 再沿着t排列
+            for i=1:size_ctrpts_wegts(2)    % 先沿着s排列
+                ind_i = size_ctrpts_wegts(2) - i + 1;
+                ind_j = size_ctrpts_wegts(3) - j + 1;
+                ind_k = size_ctrpts_wegts(4) - k + 1;
+                data.ctrlPts(counter, :) = [x(ind_i,ind_j,ind_k), y(ind_i,ind_j,ind_k), z(ind_i,ind_j,ind_k), w(ind_i,ind_j,ind_k)];
+                counter = counter + 1;
+            end
+        end
+    end
+    
+    filename = "patch" + num2str(a-1) + ".yml";
+    
+    % YAML 文件写入函数
+    writeYAML(filename, data);
+end
+
